@@ -701,6 +701,27 @@ app = Client("pokemon_bot", api_id, api_hash, bot_token=bot_token)
 
 
 
+def handle_callback(client, callback_query):
+    if callback_query.data == "help":
+        # Edit the /start message with the help caption
+        caption = "Welcome to the Pokémon Catching Bot!\nCommands:\n/start - Start the bot and encounter a wild Pokémon\n/catch - Attempt to catch the encountered Pokémon\n/help - Display this help menu\n/pokedex - View your Pokémon\n\nYou can join our channel and let us know if you encounter any issues. Thank you! ❤"
+        client.edit_message_caption(
+            chat_id=callback_query.message.chat.id,
+            message_id=callback_query.message.message_id,
+            caption=caption
+        )
+    elif callback_query.data == "back":
+        # Edit the /start message back to its original caption
+        caption = f"You just encountered a wild {pokemon_name}!\nUse /help for the help menu!"
+        client.edit_message_caption(
+            chat_id=callback_query.message.chat.id,
+            message_id=callback_query.message.message_id,
+            caption=caption
+        )
+
+# Register the callback query handler
+app.add_handler(CallbackQueryHandler(handle_callback))
+
 @app.on_message(filters.command("start"))
 def start(_, message):
     # Send an image with a caption
@@ -720,6 +741,9 @@ def start(_, message):
             [
                 InlineKeyboardButton("Join Channel", url="https://t.me/BotGeniusHub"),
                 InlineKeyboardButton("Add me to a Group", url="https://t.me/PokemonCatcherXBot?startgroup=new")
+            ],
+            [
+                InlineKeyboardButton("Help", callback_data="help")
             ]
         ]
     )
@@ -732,15 +756,6 @@ def start(_, message):
         reply_markup=keyboard,
     )
 
-
-@app.on_message(filters.command("help"))
-def help_command(client, message):
-    
-    image_path = "IMG_20230622_003312_519.jpg"  
-    with open(image_path, "rb") as image_file:
-        caption = f"Welcome to the Pokémon Catching Bot!\nCommands:\n/start - Start the bot and encounter a wild Pokémon\n/catch - Attempt to catch the encountered Pokémon\n/help - Display this help menu\n/pokedex - View your Pokémon\n\n You have any issues with bot join our channel and said us what issues you face..Thank you ❤"
-                       
-        client.send_photo(chat_id=message.chat.id, photo=image_file, caption=caption, reply_to_message_id=message.message_id)
 
 
 #-----------------------
