@@ -830,6 +830,45 @@ def catch_pokemon(client, message):
     else:
         client.send_message(chat_id=message.chat.id, text="The announced Pokémon is not {}.".format(pokemon_name), reply_to_message_id=message.message_id)
 
+# Handler function for /ptrade command
+@app.on_message(filters.command("ptrade"))
+def pokemon_trade(client, message):
+    user_id = message.from_user.id
+    reply_message = message.reply_to_message
+
+    if not reply_message or not reply_message.from_user:
+        client.send_message(chat_id=message.chat.id, text="Please reply to the message of the user you want to trade with.", reply_to_message_id=message.message_id)
+        return
+
+    target_user_id = reply_message.from_user.id
+    pokemon_name = message.text.split("/ptrade ", 1)[-1].lower()
+
+    # Check if the specified Pokémon exists in the user's Pokedex
+    user_pokedex_data = collection.find_one({"user_id": user_id})
+    if not user_pokedex_data or pokemon_name not in user_pokedex_data["pokedex"]:
+        client.send_message(chat_id=message.chat.id, text="You don't have the Pokémon {} in your Pokedex.".format(pokemon_name), reply_to_message_id=message.message_id)
+        return
+
+    # Check if the target user exists in the database
+    target_user_pokedex_data = collection.find_one({"user_id": target_user_id})
+    if not target_user_pokedex_data:
+        client.send_message(chat_id=message.chat.id, text="The target user doesn't exist in the database.", reply_to_message_id=message.message_id)
+        return
+
+    # Add the Pokémon to the target user's Pokedex
+    target_user_pokedex = target_user_pokedex_data.get("pokedex", [])
+    if pokemon_name not in target_user_pokedex:
+        target_user_pokedex.append(pokemon_name)
+        collection.update_one({"user_id": target_user_id}, {"$set": {"pokedex": target_user_pokedex}})
+
+    # Remove the Pokémon from the current user's Pokedex
+    user_pokedex = user_pokedex_data["pokedex"]
+    user_pokedex.remove(pokemon_name)
+    collection.update_one({"user_id": user_id}, {"$set": {"pokedex": user_pokedex}})
+
+    client.send_message(chat_id=message.chat.id, text="Pokémon {} has been traded to [{}](tg://user?id={}).".format(pokemon_name, reply_message.from_user.first_name, target_user_id), parse_mode="Markdown", reply_to_message_id=message.message_id)
+
+
 
 # Handler function for group messages
 @app.on_message(filters.group)
