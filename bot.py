@@ -808,6 +808,7 @@ def catch_pokemon(client, message):
             client.send_message(chat_id=message.chat.id, text="Oh no! {} escaped!".format(announced_pokemon["name"], reply_to_message_id=message.message_id))
     else:
         client.send_message(chat_id=message.chat.id, text="The announced Pokémon is not {}.".format(pokemon_name), reply_to_message_id=message.message_id)
+
 # Handler function for /ptrade command
 @app.on_message(filters.command("ptrade"))
 def pokemon_trade(client, message):
@@ -821,14 +822,11 @@ def pokemon_trade(client, message):
     target_user_id = reply_message.from_user.id
     pokemon_name = message.text.split("/ptrade ", 1)[-1].lower()
 
-    # Check if the specified Pokémon exists in the user's Pokedex
-    user_pokedex_data = collection.find_one({"user_id": user_id})
     # Check if the specified Pokémon exists in the user's Pokedex (case-insensitive comparison)
     user_pokedex_data = collection.find_one({"user_id": user_id})
     if not user_pokedex_data or pokemon_name.lower() not in [name.lower() for name in user_pokedex_data["pokedex"]]:
-    client.send_message(chat_id=message.chat.id, text="You don't have the Pokémon {} in your Pokedex.".format(pokemon_name), reply_to_message_id=message.message_id)
-    return
-
+        client.send_message(chat_id=message.chat.id, text="You don't have the Pokémon {} in your Pokedex.".format(pokemon_name), reply_to_message_id=message.message_id)
+        return
 
     # Check if the target user exists in the database
     target_user_pokedex_data = collection.find_one({"user_id": target_user_id})
