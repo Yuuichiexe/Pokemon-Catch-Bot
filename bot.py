@@ -820,11 +820,11 @@ def pokemon_trade(client, message):
         return
 
     target_user_id = reply_message.from_user.id
-    pokemon_name = message.text.split("/ptrade ", 1)[-1].lower()
+    pokemon_name = message.text.split("/ptrade ", 1)[-1].lower().strip()
 
     # Check if the specified Pokémon exists in the user's Pokedex (case-insensitive comparison)
     user_pokedex_data = collection.find_one({"user_id": user_id})
-    if not user_pokedex_data or pokemon_name.lower() not in [name.lower() for name in user_pokedex_data["pokedex"]]:
+    if not user_pokedex_data or pokemon_name not in [name.strip() for name in user_pokedex_data["pokedex"]]:
         client.send_message(chat_id=message.chat.id, text="You don't have the Pokémon {} in your Pokedex.".format(pokemon_name), reply_to_message_id=message.message_id)
         return
 
@@ -840,12 +840,15 @@ def pokemon_trade(client, message):
         target_user_pokedex.append(pokemon_name)
         collection.update_one({"user_id": target_user_id}, {"$set": {"pokedex": target_user_pokedex}})
 
-    # Remove the Pokémon from the current user's Pokedex
+    # Remove the Pokémon from the current user's Pokedex if it exists
     user_pokedex = user_pokedex_data["pokedex"]
-    user_pokedex.remove(pokemon_name)
-    collection.update_one({"user_id": user_id}, {"$set": {"pokedex": user_pokedex}})
+    if pokemon_name in user_pokedex:
+        user_pokedex.remove(pokemon_name)
+        collection.update_one({"user_id": user_id}, {"$set": {"pokedex": user_pokedex}})
+        client.send_message(chat_id=message.chat.id, text="Pokémon {} has been traded to [{}](tg://user?id={}).".format(pokemon_name, reply_message.from_user.first_name, target_user_id), parse_mode="Markdown", reply_to_message_id=message.message_id)
+    else:
+        client.send_message(chat_id=message.chat.id, text="You don't have the Pokémon {} in your Pokedex.".format(pokemon_name), reply_to_message_id=message.message_id)
 
-    client.send_message(chat_id=message.chat.id, text="Pokémon {} has been traded to [{}](tg://user?id={}).".format(pokemon_name, reply_message.from_user.first_name, target_user_id), parse_mode="Markdown", reply_to_message_id=message.message_id)
 
 
 # Handler function for group messages
