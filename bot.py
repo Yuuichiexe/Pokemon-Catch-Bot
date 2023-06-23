@@ -111,7 +111,7 @@ def private_message(client, message):
     user_input = message.text.lower()
 
     # Admin panel
-    if user_id == YOUR_ADMIN_USER_ID:
+    if user_id == 2033411815:
         if user_input == "/admin":
             show_admin_panel(message)
         elif admin_panel["add_anime"]:
