@@ -1,3 +1,4 @@
+!pip install pyrogram==1.4.1 pymongo==3.12.0 pokebase==1.1.0 requests==2.26.0 dnspython
 import os
 import random
 import requests
