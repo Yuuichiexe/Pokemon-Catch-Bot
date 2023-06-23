@@ -3,22 +3,20 @@ import random
 import requests
 from pymongo import MongoClient
 from pyrogram import Client, filters, idle
-from pokebase import pokemon
-from uuid import uuid4
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Connect to MongoDB
 client = MongoClient('mongodb+srv://sonu55:sonu55@cluster0.vqztrvk.mongodb.net/?retryWrites=true&w=majority')
 db = client['pokemon_bot']
 collection = db['pokedex']
+anime_collection = db['anime']
 
-# Database of available Pokémon, you can add more Pokemon with this format
+# Database of available Pokémon
 pokemon_database = [
     {"name": "Bulbasaur", "catch_rate": 45},
     {"name": "Ivysaur", "catch_rate": 45},
     {"name": "Venusaur", "catch_rate": 45},
-
-] # Add more Pokémon
+]
 
 # Global variables to track the group message count and the currently announced Pokémon
 message_count = 0
@@ -34,6 +32,13 @@ app = Client("pokemon_bot", api_id, api_hash, bot_token=bot_token)
 # Global variables to track the announced Pokémon and caught Pokémon
 announced_pokemon = None
 caught_pokemon = {}
+
+# Admin panel
+admin_panel = {
+    "add_anime": False,
+    "add_waifu": False,
+    "current_anime": None
+}
 
 # Handler function for /catch command
 @app.on_message(filters.command("catch"))
@@ -73,7 +78,6 @@ def catch_pokemon(client, message):
         client.send_message(chat_id=message.chat.id, text="The announced Pokémon is not {}.".format(pokemon_name), reply_to_message_id=message.message_id)
 
 
-
 # Handler function for group messages
 @app.on_message(filters.group)
 def group_message(client, message):
@@ -99,6 +103,65 @@ def group_message(client, message):
         image_file.close()
         os.remove(image_file_name)
 
+
+# Handler function for private messages
+@app.on_message(filters.private)
+def private_message(client, message):
+    user_id = message.from_user.id
+    user_input = message.text.lower()
+
+    # Admin panel
+    if user_id == YOUR_ADMIN_USER_ID:
+        if user_input == "/admin":
+            show_admin_panel(message)
+        elif admin_panel["add_anime"]:
+            add_new_anime(message)
+        elif admin_panel["add_waifu"]:
+            add_new_waifu(message)
+
+
+# Show admin panel options
+def show_admin_panel(message):
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("Add Anime", callback_data="add_anime")],
+            [InlineKeyboardButton("Add Waifu", callback_data="add_waifu")]
+        ]
+    )
+    message.reply_text("Admin Panel:", reply_markup=keyboard)
+
+
+# Add new anime
+def add_new_anime(message):
+    anime_name = message.text
+    anime_collection.insert_one({"name": anime_name})
+    admin_panel["add_anime"] = False
+    admin_panel["current_anime"] = anime_name
+    message.reply_text(f"Anime '{anime_name}' added successfully. Now add waifus to this anime.")
+
+
+# Add new waifu
+def add_new_waifu(message):
+    waifu_name = message.text
+    waifu_photos = message.photo
+
+    if waifu_photos:
+        # Download waifu photos
+        file_id = waifu_photos[-1].file_id
+        file_path = app.download_media(file_id, file_name=f"waifu_{waifu_name}")
+
+        # Save waifu to the database
+        anime_name = admin_panel["current_anime"]
+        anime_collection.update_one({"name": anime_name}, {"$push": {"waifus": {"name": waifu_name, "photo_path": file_path}}})
+
+        # Remove downloaded file
+        os.remove(file_path)
+
+        message.reply_text(f"Waifu '{waifu_name}' added successfully to anime '{anime_name}'.")
+    else:
+        message.reply_text("Please provide at least one photo of the waifu.")
+
+
 # Function to add a caught Pokémon to the user's Pokedex
 def add_to_pokedex(user_id, pokemon_name):
     pokedex_data = collection.find_one({"user_id": user_id})
@@ -109,3 +172,8 @@ def add_to_pokedex(user_id, pokemon_name):
         collection.update_one({"user_id": user_id}, {"$set": {"pokedex": pokedex}})
     else:
         collection.insert_one({"user_id": user_id, "pokedex": [pokemon_name]})
+
+
+# Start the bot
+app.run()
+    
