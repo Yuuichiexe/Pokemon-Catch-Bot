@@ -10,9 +10,9 @@ db = client['waifu_bot']
 collection = db['waifus']
 
 # Create a Pyrogram client
-api_id = 10536941
-api_hash = 'c78f516b3edf45f38277755da7f52128'
-bot_token = '5842642941:AAHkXH9rD11b7qWingnz8tlC-DerRPDxSZI'
+api_id = 26405281
+api_hash = '77b54622ef8e0fd15555d939fc74005d'
+bot_token = '6302592014:AAEgM0TzNoyzO1X9NjfPDSbJJ3OD04avOXA'
 app = Client("waifu_bot", api_id, api_hash, bot_token=bot_token)
 
 
